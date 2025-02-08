@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/MatchPetWeb/static/css/main.f855e6bc.css",
+    "main.js": "/MatchPetWeb/static/js/main.e98e2fdd.js",
+    "static/js/488.aaacafd3.chunk.js": "/MatchPetWeb/static/js/488.aaacafd3.chunk.js",
+    "index.html": "/MatchPetWeb/index.html",
+    "main.f855e6bc.css.map": "/MatchPetWeb/static/css/main.f855e6bc.css.map",
+    "main.e98e2fdd.js.map": "/MatchPetWeb/static/js/main.e98e2fdd.js.map",
+    "488.aaacafd3.chunk.js.map": "/MatchPetWeb/static/js/488.aaacafd3.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f855e6bc.css",
+    "static/js/main.e98e2fdd.js"
+  ]
+}
