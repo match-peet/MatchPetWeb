@@ -24,35 +24,15 @@ const TensorflowPredictor = () => {
             console.log('🔄 Cargando modelo...');
             const loadedModel = await tf.loadLayersModel(MODEL_URL);
 
-            console.log("✅ Modelo original cargado. Reconstruyendo...");
+            console.log("✅ Modelo cargado con éxito");
 
-            // Obtener las capas intermedias y de salida
-            const layers = loadedModel.layers.slice(2);  // Omitimos las capas de entrada
+            // Verificar las entradas del modelo y asegurarse de que las formas sean correctas
+            const inputShape = loadedModel.inputs.map(input => input.shape);
+            console.log('Forma de entrada:', inputShape);
 
-            // Crear nuevas entradas con inputShape en lugar de batch_shape
-            const newInput1 = tf.input({ shape: [1165, 1], name: "input_layer_2" });
-            const newInput2 = tf.input({ shape: [771, 1], name: "input_layer_3" });
+            // Establecer el modelo en el estado
+            setModel(loadedModel);
 
-            // Pasar las nuevas entradas a la red
-            let x1 = newInput1;
-            let x2 = newInput2;
-
-            for (let layer of layers) {
-                if (layer.inputShape[1] === 1165) {
-                    x1 = layer.apply(x1);
-                } else if (layer.inputShape[1] === 771) {
-                    x2 = layer.apply(x2);
-                }
-            }
-
-            // Combinar las salidas de ambas ramas antes de la capa final
-            const outputLayer = layers[layers.length - 1].apply([x1, x2]);
-
-            // Reconstruir el modelo con las nuevas entradas
-            const newModel = tf.model({ inputs: [newInput1, newInput2], outputs: outputLayer });
-
-            console.log('✅ Modelo reconstruido con éxito:', newModel);
-            setModel(newModel);
         } catch (error) {
             console.error("❌ Error cargando el modelo:", error);
         }
@@ -141,7 +121,6 @@ const TensorflowPredictor = () => {
 
         for (const animal of animals) {
             try {
-                // Verificar que los datos del animal sean correctos
                 if (!animal.traits || Object.values(animal.traits).length !== 771) {
                     console.warn(`⚠ Datos incorrectos para ${animal.name}, se omite.`);
                     continue;
@@ -157,7 +136,6 @@ const TensorflowPredictor = () => {
 
                 console.log(`📊 Similitud con ${animal.name}:`, score);
 
-                // Comparar para encontrar el mejor match
                 if (score > bestScore) {
                     bestScore = score;
                     bestAnimal = animal;
@@ -175,6 +153,7 @@ const TensorflowPredictor = () => {
         setBestMatch(bestAnimal);
         console.log("🏆 Mejor coincidencia:", bestAnimal);
     };
+
 
     return (
         <Container>
