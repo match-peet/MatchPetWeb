@@ -23,12 +23,41 @@ const TensorflowPredictor = () => {
         try {
             console.log('🔄 Cargando modelo...');
             const loadedModel = await tf.loadLayersModel(MODEL_URL);
-            console.log('✅ Modelo cargado:', loadedModel);
-            setModel(loadedModel);
+
+            console.log("✅ Modelo original cargado. Reconstruyendo...");
+
+            // Obtener las capas intermedias y de salida
+            const layers = loadedModel.layers.slice(2);  // Omitimos las capas de entrada
+
+            // Crear nuevas entradas con inputShape en lugar de batch_shape
+            const newInput1 = tf.input({ shape: [1165, 1], name: "input_layer_2" });
+            const newInput2 = tf.input({ shape: [771, 1], name: "input_layer_3" });
+
+            // Pasar las nuevas entradas a la red
+            let x1 = newInput1;
+            let x2 = newInput2;
+
+            for (let layer of layers) {
+                if (layer.inputShape[1] === 1165) {
+                    x1 = layer.apply(x1);
+                } else if (layer.inputShape[1] === 771) {
+                    x2 = layer.apply(x2);
+                }
+            }
+
+            // Combinar las salidas de ambas ramas antes de la capa final
+            const outputLayer = layers[layers.length - 1].apply([x1, x2]);
+
+            // Reconstruir el modelo con las nuevas entradas
+            const newModel = tf.model({ inputs: [newInput1, newInput2], outputs: outputLayer });
+
+            console.log('✅ Modelo reconstruido con éxito:', newModel);
+            setModel(newModel);
         } catch (error) {
             console.error("❌ Error cargando el modelo:", error);
         }
     };
+
 
     // Obtener preferencias del usuario desde Firebase
     const fetchUserPreferences = async () => {
@@ -67,6 +96,7 @@ const TensorflowPredictor = () => {
 
         const prefs = userPreferences.preferences;
 
+        // Se ajusta para que coincida con input_layer_2
         return [
             prefs["aceptacionContrato"][0] === 'Sí' ? 1 : 0,
             prefs["compromisoEconomico"][0] === 'Sí' ? 1 : 0,
@@ -89,7 +119,7 @@ const TensorflowPredictor = () => {
 
     // Función de codificación para variables categóricas
     const encodeCategory = (value) => {
-        const categories = ['Sí', 'No']; // Asumimos que las categorías son 'Sí' y 'No', cambia si es necesario
+        const categories = ['Sí', 'No'];
         return categories.indexOf(value);
     };
 
@@ -104,26 +134,32 @@ const TensorflowPredictor = () => {
         let bestScore = -Infinity;
 
         const userPrefs = preprocessUserPreferences();
-        if (userPrefs.length !== 16) {
-            console.error("❌ El número de preferencias del usuario no es 16. Revisar datos.");
+        if (userPrefs.length !== 1165) {
+            console.error("❌ La cantidad de datos del usuario no coincide con el modelo (1165).");
             return;
         }
 
         for (const animal of animals) {
             try {
-                // Preprocesar los datos del animal
-                const animalTensor = tf.tensor2d([Object.values(animal.traits)], [1, 5]); // Asegúrate que cada animal tenga 5 características
-                const userTensor = tf.tensor2d([userPrefs], [1, 16]);  // 16 características del usuario
+                // Verificar que los datos del animal sean correctos
+                if (!animal.traits || Object.values(animal.traits).length !== 771) {
+                    console.warn(`⚠ Datos incorrectos para ${animal.name}, se omite.`);
+                    continue;
+                }
+
+                // Crear tensores con las dimensiones adecuadas
+                const animalTensor = tf.tensor3d([Object.values(animal.traits)], [1, 771, 1]);
+                const userTensor = tf.tensor3d([userPrefs], [1, 1165, 1]);
 
                 // Realizar predicción
                 const output = model.predict([userTensor, animalTensor]);
-                const score = await output.data(); // Convertir a array
+                const score = (await output.data())[0];
 
-                console.log(`📊 Similitud con ${animal.name}:`, score[0]);
+                console.log(`📊 Similitud con ${animal.name}:`, score);
 
                 // Comparar para encontrar el mejor match
-                if (score[0] > bestScore) {
-                    bestScore = score[0];
+                if (score > bestScore) {
+                    bestScore = score;
                     bestAnimal = animal;
                 }
 

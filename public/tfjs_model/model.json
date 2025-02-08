@@ -14,7 +14,7 @@
                     {
                         "class_name": "InputLayer",
                         "config": {
-                            "batch_shape": [
+                            "inputShape": [
                                 null,
                                 1165,
                                 1
@@ -29,7 +29,7 @@
                     {
                         "class_name": "InputLayer",
                         "config": {
-                            "batch_shape": [
+                            "inputShape": [
                                 null,
                                 771,
                                 1
